@@ -1,39 +1,71 @@
 const express = require("express");
-const User = require("./Models/userModel");
-const { default: mongoose } = require("mongoose");
+const { config } = require("dotenv");
+const { mongoose } = require("mongoose");
+const { v2: cloudinary } = require("cloudinary");
+const cors = require("cors");
+const Content = require("./Models/ContentModel");
+
+config();
 
 const app = express();
-
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-const data = [
-  { email: "anees@abc.com", password: "anees1223" },
-  { email: "sana@abc.com", password: "sana1223" },
-];
+app.use(
+  cors({
+    origin: "*", // Allow requests from this origin
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  })
+);
 
-app.get("/api", (req, res) => {
-  res.send("hello");
+const PORT = process.env.PORT || 8000;
+
+app.get("/api/cloudinary-sign", (req, res) => {
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  const signature = cloudinary.utils.api_sign_request(
+    {
+      timestamp: timestamp,
+    },
+
+    process.env.CLOUDINARY_SECRET
+  );
+
+  res.statusCode = 200;
+  res.json({ signature, timestamp, api_key: process.env.CLOUDINARY_API_KEY });
 });
 
-app.post("/api/login", (req, res) => {
-  const { email, password } = req.body;
+app.post("/api/submit-content", async (req, res) => {
+  try {
+    console.log(req.body);
+    const { title, description, file, fileLink } = req.body;
 
-  // search for existing user in database
+    // Save content to the database
+    const newContent = new Content({
+      title,
+      description,
+      file,
+      fileLink,
+    });
 
-  const existingUser = data.find((el) => el.email === email);
-  console.log(existingUser);
-  if (existingUser) {
-    if (existingUser.password === password) {
-      res.send("user authenticated");
-    } else {
-      res.send("invalid credentials");
-    }
+    await newContent.save();
+    console.log(newContent);
+    res.status(201).json({ message: "Content submitted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-//mongoose.connect();
+mongoose
+  .connect(process.env.CONNECTION_URI, { dbName: "EDUCRAZE" })
+  .then(() => {
+    console.log("MONGO JUMBO");
+  })
+  .catch((err) => {
+    console.error(`connection to db unsuccessful: ${err}`);
+  });
 
-app.listen(8000, () => {
-  console.log(`serving on localhost 8000`);
+app.listen(PORT, () => {
+  console.log("Server running on " + PORT);
 });
