@@ -1,7 +1,7 @@
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import NotFound from "./components/NotFound";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import PreviewSubmissions from "./components/PreviewSubmissions";
 import SubmissionForm from "./components/SubmissionForm";

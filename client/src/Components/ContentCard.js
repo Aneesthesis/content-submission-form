@@ -1,7 +1,7 @@
 const ContentCard = ({ content, onDelete }) => (
   <div
     className="flex justify-between bg-white p-6 rounded-md shadow-md"
-    key={content.id}
+    key={content._id}
   >
     <div>
       <h2 className="text-xl font-bold mb-4">{content.title}</h2>

@@ -36,7 +36,7 @@ contentRouter.delete("/:contentId", async (req, res) => {
     const content = await Content.findByIdAndDelete(req.params.contentId);
 
     if (!content) {
-      return res.status(404).send({ message: "Content not found" });
+      return res.status(404).send({ message: "Content was not found" });
     }
 
     res.status(204).send();
