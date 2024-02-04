@@ -15,7 +15,7 @@ function Header() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row px-4 md:px-14 justify-between py-6 bg-gradient-to-tr from-blue-200 to-green-800 text-white">
+    <div className="flex flex-col md:flex-row px-4 md:px-14 justify-between py-6 bg-gradient-to-tr from-blue-100 to-green-400 text-white">
       <div className="flex items-center justify-between">
         <h1 className="text-xl md:text-lg font-semibold">EDUCRAZE</h1>
         <button
@@ -29,10 +29,16 @@ function Header() {
       <div
         className={`md:flex hidden md:space-x-5 ${isMenuOpen ? "hidden" : ""}`}
       >
-        <Link to={"/"} className="hover:underline cursor-pointer mb-2 md:mb-0">
+        <Link
+          to={"/"}
+          className="hover:text-gray-600 cursor-pointer mb-2 md:mb-0"
+        >
           SUBMIT CONTENT
         </Link>
-        <Link to={"/submissions"} className="hover:underline cursor-pointer">
+        <Link
+          to={"/submissions"}
+          className="hover:text-gray-600 cursor-pointer"
+        >
           PAST SUBMISSIONS
         </Link>
       </div>

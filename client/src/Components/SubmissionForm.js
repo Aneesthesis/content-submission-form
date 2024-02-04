@@ -1,5 +1,8 @@
 import React, { useReducer, useState } from "react";
 import axios from "axios";
+import { getError } from "../utils/getError";
+import { toast } from "react-toastify";
+import { uploadFile } from "../utils/storageUtils";
 
 const reducer = (state, action) => {
   switch (action.type) {
@@ -16,7 +19,7 @@ function SubmissionForm() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    file: "",
+    file: null,
     fileLink: "",
   });
 
@@ -27,11 +30,15 @@ function SubmissionForm() {
   });
 
   const [errors, setErrors] = useState({});
+  const [uploadPerc, setUploadPerc] = useState(0);
 
   const handleInputChange = (e) => {
     setErrors({});
     if (e.target.name === "file") {
-      setFormData({ ...formData, file: e.target.files[0], fileLink: "" });
+      const selectedFile = e.target.files[0];
+      setFormData({ ...formData, file: selectedFile, fileLink: "" });
+
+      handleFileUpload(selectedFile);
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
     }
@@ -58,58 +65,48 @@ function SubmissionForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const uploadHandler = async (e) => {
-    const url = `https://api.cloudinary.com/v1_1/dbenvvfuy/upload`;
-    try {
-      const {
-        data: { signature, timestamp, api_key },
-      } = await axios(`http://localhost:8000/api/cloudinary-sign`);
+  const handleFileUpload = (file) => {
+    uploadFile(file, setUploadPerc, formData, setFormData);
+  };
 
-      const file = formData.file;
-      const linkFormData = new FormData();
-      linkFormData.append("file", file);
-      linkFormData.append("signature", signature);
-      linkFormData.append("api_key", api_key);
-      linkFormData.append("timestamp", timestamp);
-      const { data } = await axios.post(url, linkFormData);
-
-      setFormData((prevData) => {
-        return { ...prevData, file: data.secure_url };
-      });
-      console.log("File uploaded!", formData);
-    } catch (error) {
-      console.error(error);
-    }
+  const removeFile = () => {
+    console.log(formData);
+    setFormData({ ...formData, file: null });
   };
 
   const handleSubmission = async (e) => {
     e.preventDefault();
 
     if (validateForm()) {
-      // const formDataToSend = new FormData();
-      // formDataToSend.append("title", formData.title);
-      // formDataToSend.append("description", formData.description);
-      // formDataToSend.append("fileLink", formData.fileLink);
-      // formDataToSend.append("file", formData.file);
-
       console.log("Form data:", formData);
 
       try {
         dispatch({ type: "UPLOADING", payload: true });
-        if (formData.file) {
-          await uploadHandler();
-        }
 
-        console.log("sending.." + formData.file);
+        console.log(formData + "WAs logged");
         const { data, status } = await axios.post(
-          "http://localhost:8000/api/submit-content",
+          "http://localhost:8000/api/content",
           formData
         );
-        if (status === 201)
+        if (status === 201) {
+          console.log(formData);
+          // Reset the form state
+          setFormData((prevData) => ({
+            ...prevData,
+            title: "",
+            description: "",
+            file: null,
+            fileLink: "",
+          }));
+
+          console.log(formData, uploadPerc);
           dispatch({ type: "SUCCESS", payload: data.message });
+          toast.success("upload successful");
+        }
       } catch (error) {
-        console.error(error);
+        console.error(getError(error));
         dispatch({ type: "FAILED", payload: error.message });
+        toast.error("upload failed");
       } finally {
         dispatch({ type: "UPLOADING", payload: false });
       }
@@ -126,13 +123,15 @@ function SubmissionForm() {
     >
       <form
         onSubmit={handleSubmission}
-        className="shadow-md rounded-md mx-4 px-4 sm:px-8 pt-6 pb-8 mb-4 w-full sm:w-2/3 md:w-1/2 lg:w-1/3 text-white bg-gradient-to-t from-green-800 to-blue-300 opacity-95"
+        className="shadow-md rounded-md mx-4 px-4 sm:px-8 pt-6 pb-8 mb-4 w-full sm:w-2/3 md:w-1/2 lg:w-1/3 text-black bg-gradient-to-t from-blue-100 to-green-300 opacity-95"
       >
-        <h1 className="text-2xl font-bold mb-6">Content Submission</h1>
+        <h1 className="text-2xl font-bold mb-6 text-white">
+          Content Submission
+        </h1>
 
         <div className="mb-4">
           <label
-            className="block text-gray-300 text-base font-bold mb-2"
+            className="block text-gray-600 text-base font-bold mb-2"
             htmlFor="title"
           >
             Title
@@ -145,7 +144,8 @@ function SubmissionForm() {
             id="title"
             type="text"
             name="title"
-            placeholder="Give your content a catchy title"
+            value={formData.title}
+            placeholder="A suitable title..."
           />
           {errors.title && (
             <p className="text-red-500 text-base italic">{errors.title}</p>
@@ -154,7 +154,7 @@ function SubmissionForm() {
 
         <div className="mb-4">
           <label
-            className="block text-gray-300 text-base font-bold mb-2"
+            className="block text-gray-600 text-base font-bold mb-2"
             htmlFor="description"
           >
             Description
@@ -165,8 +165,9 @@ function SubmissionForm() {
               errors.description ? "border-red-500" : ""
             }`}
             id="description"
+            value={formData.description}
             name="description"
-            placeholder="Describe it here"
+            placeholder="A brief description..."
             style={{ maxHeight: "150px" }}
           />
           {errors.description && (
@@ -178,11 +179,12 @@ function SubmissionForm() {
 
         <div className="mb-4">
           <label
-            className="block text-gray-300 text-base font-bold mb-2"
+            className="block text-gray-600 text-base font-bold mb-2"
             htmlFor="file"
           >
             Upload File or Provide File Link
           </label>
+
           <div className="flex items-center">
             <input
               onChange={handleInputChange}
@@ -192,9 +194,22 @@ function SubmissionForm() {
               id="file"
               type="file"
               name="file"
-              accept=".pdf, .doc, .docx, .xls, .xlsx, .txt, .jpg, .png, .gif, .ppt, .pptx, .zip, .rar, .tex"
+              accept=".pdf, .doc, .docx, .xls, .xlsx, .txt, .jpg, .png, .gif, .ppt, .pptx, .zip, .rar, .tex, video/*"
             />
-            <span className="ml-2 text-base">(or)</span>
+            {formData.file && (
+              <button
+                type="button"
+                onClick={removeFile}
+                className="ml-2 text-base text-red-500 font-bold"
+              >
+                ✖️
+              </button>
+            )}
+            {uploadPerc > 0 && (
+              <span className="text-green-500 text-xm ml-2">
+                ({uploadPerc}%)
+              </span>
+            )}
           </div>
           {errors.file && (
             <p className="text-red-500 text-base italic">{errors.file}</p>
@@ -205,9 +220,10 @@ function SubmissionForm() {
               errors.fileLink ? "border-red-500" : ""
             }`}
             id="fileLink"
+            value={formData.fileLink}
             type="text"
             name="fileLink"
-            placeholder="Provide a link to the file"
+            placeholder="provide a link, instead!"
           />
           {errors.fileLink && (
             <p className="text-red-500 text-base italic">{errors.fileLink}</p>
@@ -216,10 +232,13 @@ function SubmissionForm() {
 
         <div className="flex items-center justify-between">
           <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            disabled={uploadPerc > 0}
+            className={`${
+              uploadPerc > 0 ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-700"
+            }  text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline`}
             type="submit"
           >
-            {state.uploading ? "uploading..." : "Submit"}
+            {`${state.uploading ? "Uploading..." : "Submit"}`}
           </button>
         </div>
       </form>
