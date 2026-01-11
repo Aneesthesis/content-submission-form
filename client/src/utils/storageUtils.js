@@ -4,7 +4,7 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from "firebase/storage";
-import app from "../utils/firebase";
+import { app } from "../utils/firebase";
 
 export const uploadFile = async (
   file,

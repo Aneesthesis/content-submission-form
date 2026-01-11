@@ -3,6 +3,8 @@ import axios from "axios";
 import { getError } from "../utils/getError";
 import { toast } from "react-toastify";
 import { uploadFile } from "../utils/storageUtils";
+import { ref, deleteObject } from "firebase/storage";
+import { storage } from "../utils/firebase";
 
 const reducer = (state, action) => {
   switch (action.type) {
@@ -71,9 +73,21 @@ function SubmissionForm() {
     uploadFile(file, setUploadPerc, formData, setFormData);
   };
 
-  const removeFile = () => {
-    console.log(formData);
-    setFormData({ ...formData, file: null });
+  const removeFile = async () => {
+    if (formData.file && formData.fileLink) {
+      try {
+        const fileRef = ref(storage, formData.fileLink);
+        await deleteObject(fileRef);
+        console.log("File deleted from Firebase");
+      } catch (error) {
+        console.error("Error deleting file:", error);
+        toast.error("Failed to delete file from storage");
+      }
+    }
+
+    setFormData({ ...formData, file: null, fileLink: "" });
+    document.getElementById("file").value = "";
+    setUploadPerc(0);
   };
 
   const handleSubmission = async (e) => {
