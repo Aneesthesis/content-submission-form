@@ -12,6 +12,8 @@ const reducer = (state, action) => {
       return { ...state, success: action.payload };
     case "FAILED":
       return { ...state, error: action.payload };
+    default:
+      return state;
   }
 };
 
@@ -85,7 +87,7 @@ function SubmissionForm() {
 
         console.log(formData + "WAs logged");
         const { data, status } = await axios.post(
-          "http://localhost:8000/api/content",
+          "https://educraze-api.onrender.com/api/content",
           formData
         );
         if (status === 201) {

@@ -15,7 +15,9 @@ function PreviewSubmissions() {
     const fetchContentList = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:8000/api/content");
+        const response = await axios.get(
+          "https://educraze-api.onrender.com/api/content"
+        );
         setContentList(response.data.data);
         console.log(response.data.data);
       } catch (error) {
@@ -30,7 +32,9 @@ function PreviewSubmissions() {
 
   const deleteContentHandler = async (contentId) => {
     try {
-      await axios.delete(`http://localhost:8000/api/content/${contentId}`);
+      await axios.delete(
+        `https://educraze-api.onrender.com/api/content/${contentId}`
+      );
       setContentList((prevContentList) =>
         prevContentList.filter((content) => content._id !== contentId)
       );
